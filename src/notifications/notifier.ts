@@ -9,6 +9,7 @@
  *   - {@link isMarkdownParseError} — classifier for Telegram entity-parse failures
  *   - {@link notifierSkips}    — counters for suppressed sends
  *   - {@link createNotifier}   — factory that returns the poller's send function
+ *   - {@link routeStatus}      — actionable status when zero routes are active
  */
 
 import type { Bot } from "grammy";
@@ -86,6 +87,38 @@ function eventRefLabel(eventRef: SendExtra["eventRef"]): string {
   }
   if (typeof eventRef.eventId === "string" && eventRef.eventId) parts.push(eventRef.eventId);
   return parts.length > 0 ? ` (${parts.join(" ")})` : "";
+}
+
+// ── routeStatus ──────────────────────────────────────────────────────────────
+
+/** Outcome of checking which configured notification routes are active. */
+export type RouteStatus =
+  | { state: "active"; activeRoutes: number }
+  | {
+      state: "no-active-routes";
+      activeRoutes: 0;
+      /** Human-readable, actionable explanation. Never claims delivery. */
+      message: string;
+    };
+
+/**
+ * Report whether any notification route is active. A zero-active-route result
+ * is reported distinctly from healthy delivery, and it never implies that a
+ * notification was delivered.
+ *
+ * `activeRoutes` is the count of routes the caller considers enabled; when it
+ * is zero the result is `no-active-routes` with an actionable message.
+ */
+export function routeStatus(activeRoutes: number): RouteStatus {
+  if (Number.isFinite(activeRoutes) && activeRoutes > 0) {
+    return { state: "active", activeRoutes: Math.floor(activeRoutes) };
+  }
+  return {
+    state: "no-active-routes",
+    activeRoutes: 0,
+    message:
+      "No notification routes are enabled: every configured route is disabled, so no notifications will be sent. Enable at least one route in the chat configuration (chatId, marketChatId, squadChatId) to receive notifications. No delivery has been attempted or confirmed.",
+  };
 }
 
 // ── notifierSkips ────────────────────────────────────────────────────────────
