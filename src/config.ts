@@ -656,14 +656,14 @@ function collector(profile: Record<string, string>) {
     chatIds(name: string): string[] {
       const value = this.required(name);
       if (value === "") return [];
-      
+
       const ids = value.split(",").map(s => s.trim()).filter(s => s !== "");
       if (ids.length === 0) {
         problems.push(`${name} is required but not set`);
         return [];
       }
       for (const id of ids) {
-        if (!/^-?\d+$/.test(id) && !/^@[A-Za-z0-9_]{4,}$/.test(id)) {
+        if (!/^-?[1-9]\d*$/.test(id) && !/^-?0$/.test(id) && !/^@[A-Za-z0-9_]{4,}$/.test(id)) {
           problems.push(
             `${name} must contain numeric chat ids or @channelusernames; got "${id}"`,
           );
