@@ -13,6 +13,10 @@
  *
  * The journal is best-effort: a write failure is logged and the poller carries
  * on, falling back to guessing from the cursor exactly as it does today.
+ *
+ * Diagnostics: each entry may carry an optional `topicId` so operators can tell
+ * separate forum topics within the same chat apart. Destination identifiers are
+ * never exposed through public diagnostics; see `redactTopicForDiagnostics`.
  */
 
 import { mkdir, open, readFile, rename } from "node:fs/promises";
@@ -27,6 +31,8 @@ export interface JournalEntry {
   source: string;
   ledger: number;
   eventName: string;
+  /** Telegram forum topic (message_thread_id) the send targets, when any. */
+  topicId?: number;
   /** Bounded hash of the message body; the body itself is never persisted. */
   textHash?: string;
   at: number;
@@ -50,6 +56,7 @@ export interface SendJournal {
     source: string;
     ledger: number;
     eventName: string;
+    topicId?: number;
     textHash?: string;
     at: number;
   }): Promise<void>;
@@ -58,6 +65,24 @@ export interface SendJournal {
   loadPending(): Promise<JournalEntry[]>;
   compact(): Promise<void>;
   stats(): Promise<SendJournalStats>;
+}
+
+/**
+ * Render a topic identifier for public diagnostics. Distinguishes separate
+ * topics within one chat without revealing the raw thread id: only a short,
+ * stable, non-reversible tag is emitted. Returns `"none"` when the message is
+ * not addressed to a forum topic.
+ */
+export function redactTopicForDiagnostics(topicId: number | undefined): string {
+  if (topicId === undefined) return "none";
+  // FNV-1a over the decimal form; stable across runs, not reversible to the id.
+  let hash = 0x811c9dc5;
+  const text = String(topicId);
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `topic-${hash.toString(16).padStart(8, "0")}`;
 }
 
 function line(entry: JournalEntry): string {
@@ -143,6 +168,7 @@ export function createSendJournal(options: SendJournalOptions): SendJournal {
     source: string;
     ledger: number;
     eventName: string;
+    topicId?: number;
     textHash?: string;
     at: number;
   }): Promise<void> {

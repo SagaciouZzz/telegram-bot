@@ -9,6 +9,7 @@
  *   - {@link isMarkdownParseError} — classifier for Telegram entity-parse failures
  *   - {@link notifierSkips}    — counters for suppressed sends
  *   - {@link createNotifier}   — factory that returns the poller's send function
+ *   - {@link describeTopicRoute} — bounded, redacted topic identifier label for diagnostics
  */
 
 import type { Bot } from "grammy";
@@ -86,6 +87,30 @@ function eventRefLabel(eventRef: SendExtra["eventRef"]): string {
   }
   if (typeof eventRef.eventId === "string" && eventRef.eventId) parts.push(eventRef.eventId);
   return parts.length > 0 ? ` (${parts.join(" ")})` : "";
+}
+
+/**
+ * Redacted, bounded label for a Telegram destination used in operator
+ * diagnostics. Distinguishes separate topics (`message_thread_id`) inside the
+ * same chat while never exposing the raw chat identifier: the chat is reduced
+ * to a short non-reversible fingerprint, and the topic id is kept only when
+ * it is a positive safe integer.
+ */
+export function describeTopicRoute(
+  chatId: string | number | undefined | null,
+  topicId?: number | undefined | null,
+): string {
+  const chat = chatId === undefined || chatId === null ? "" : String(chatId);
+  let hash = 0;
+  for (let i = 0; i < chat.length; i += 1) {
+    hash = (hash * 31 + chat.charCodeAt(i)) >>> 0;
+  }
+  const chatLabel = chat === "" ? "chat:none" : `chat:${hash.toString(16).padStart(8, "0")}`;
+  const topicLabel =
+    typeof topicId === "number" && Number.isSafeInteger(topicId) && topicId > 0
+      ? `topic:${topicId}`
+      : "topic:default";
+  return `${chatLabel}/${topicLabel}`;
 }
 
 // ── notifierSkips ────────────────────────────────────────────────────────────

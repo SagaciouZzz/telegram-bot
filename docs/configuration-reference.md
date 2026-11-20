@@ -14,6 +14,7 @@ The `.env.example` file contains the base configuration. The bot uses strict env
 ### Telegram Settings
 - `BOT_TOKEN`: The API token for the Telegram bot. Required.
 - `TELEGRAM_CHAT_ID`: The numeric ID or `@channelusername` where notifications are posted. Required.
+- `TELEGRAM_TOPIC_ID`: Optional numeric message thread (topic) ID within `TELEGRAM_CHAT_ID`. When set, notifications are posted to that specific topic in a forum-enabled supergroup. Topics are distinct routes even when they share a chat: diagnostics report each route's topic identifier separately so operators can tell apart two topics in the same chat. Topic identifiers are shown in operator diagnostics only in redacted form (see below); they are never printed in full in public diagnostics, logs, or health output.
 - `MIMIR_LOCALE`: Language for bot replies and notifications. Supported: `en` (default) and `es`; region tags such as `es-MX` resolve to the base language. Any other value fails fast at startup. See [Translator Guide](translating.md).
 
 ### Mimir Contract Settings
@@ -51,6 +52,12 @@ The `.env.example` file contains the base configuration. The bot uses strict env
 ### Telegram Failures and Rate Limits
 - **Behavior**: If Telegram's API is unreachable or rate-limits the bot (HTTP 429), the `grammy` framework handles standard retry-after backoffs. If the dispatch completely fails, the bot logs the failure.
 - **Safeguard**: `MAX_NOTIFICATIONS_PER_CYCLE` prevents internal bursts from hitting Telegram's strict anti-spam rate limits.
+- **Delivery Semantics**: Notification delivery is at-least-once in the best case and is not guaranteed to be exactly-once. Diagnostics must not claim otherwise.
+
+### Route Diagnostics and Redaction
+- Operator route diagnostics list each configured Telegram route with its destination chat and topic identifiers so that separate topics within the same chat can be distinguished.
+- Destination identifiers (chat IDs, channel usernames, and topic IDs) are redacted from public diagnostics (health endpoints, public metrics, and shared logs). Only a short masked form such as `***1234` is displayed.
+- Full identifiers appear only in operator-only diagnostics that require `HEALTH_AUTH_TOKEN` authorization.
 
 ### Cursor Management and Restarts
 - **Behavior**: The cursor (the last ingested event's ledger sequence and ID) is persisted to `CURSOR_FILE` after events are dispatched.
@@ -64,7 +71,7 @@ The `.env.example` file contains the base configuration. The bot uses strict env
 
 ### Logs
 - Operational outputs are structured and actionable.
-- **Redaction**: Bot tokens and private payloads are never logged.
+- **Redaction**: Bot tokens, private payloads, and destination identifiers (chat IDs and topic IDs) are never logged in full.
 
 ## Deployment & Rollback
 

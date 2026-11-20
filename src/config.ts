@@ -187,6 +187,11 @@ export interface StellarConfig {
 
 export interface TelegramRoute {
   chatId: string;
+  /**
+   * Optional Telegram forum topic (message_thread_id). Distinguishes separate
+   * topics within the same chat in operator route diagnostics.
+   */
+  topicId?: string;
   channelPreviewMode: boolean;
 }
 

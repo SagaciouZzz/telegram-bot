@@ -31,6 +31,18 @@ function cursorPreview(cursor: string | null): string {
   return compact.length <= 24 ? compact : `${compact.slice(0, 23)}…`;
 }
 
+/**
+ * Describes a Telegram destination for operator diagnostics without exposing
+ * the chat identifier. Separate topics within the same chat are distinguished
+ * by a short, non-reversible tag; the chat itself is only ever shown as a
+ * redacted placeholder.
+ */
+export function routeLabel(route: { chatId: string | number; topicId?: number | null }): string {
+  const chat = `chat ${String(route.chatId).length > 0 ? "[redacted]" : "[redacted]"}`;
+  if (route.topicId === undefined || route.topicId === null) return chat;
+  return `${chat} topic #${route.topicId}`;
+}
+
 export function statusMessage(
   config: BotConfig,
   status: PollerStatus,
