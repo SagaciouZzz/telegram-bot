@@ -28,7 +28,7 @@ The `.env.example` file contains the base configuration. The bot uses strict env
 ### Poller Tuning & Safeguards
 - `POLL_INTERVAL_MS`: How often to query the RPC for new events. Minimum is 5000ms. Testnet ledgers close roughly every 5 seconds.
 - `START_LOOKBACK_LEDGERS`: On a cold start (no cursor file), the number of recent ledgers to check for events. Defaults to 60. Limits unbounded backfilling.
-- `CURSOR_FILE`: Path to a persistent JSON file where the bot stores its last-seen ledger cursor. 
+- `CURSOR_FILE`: Path to a persistent JSON file where the bot stores its last-seen ledger cursor.
 - `MAX_NOTIFICATIONS_PER_CYCLE`: Operational safeguard. The maximum number of notifications to dispatch in a single poll cycle. Defaults to 20. Prevents Telegram rate limiting if a massive burst of events occurs on-chain. Additional events are skipped (logged), but the cursor advances.
 
 ### Notification Filtering
@@ -36,6 +36,14 @@ The `.env.example` file contains the base configuration. The bot uses strict env
 - `SILENT_EVENTS`: Comma-separated event names sent without sound. Defaults to deposits, withdrawals, and fee claims; unknown names fail configuration validation.
 - `NOTIFY_CATEGORIES` (along with aliases `NOTIFICATION_CATEGORIES`, `NOTIFY_EVENT_CATEGORIES`, `EVENT_CATEGORIES`, and `CLAIM_CATEGORIES`): Optional allowlist restricting `mimir-market` `claim_created` notifications by category.
 - For full details on defaults, evaluation precedence, and worked examples, see [Notification Filters](notification-filters.md).
+
+### Routing Preview (Dry Run)
+Routing previews report which Telegram destinations an event would be delivered to, without calling Telegram `sendMessage`. The preview uses the same decision path as live notification delivery, so it returns:
+- **matched**: destinations that would receive the notification.
+- **filtered**: destinations excluded by `NOTIFY_ENABLED`, `NOTIFY_MARKET`, `NOTIFY_SQUAD`, `NOTIFY_CATEGORIES` (and aliases), or other notification filters.
+- **unavailable**: destinations that cannot currently receive messages (for example, a missing or unconfigured `TELEGRAM_CHAT_ID`).
+
+Previews are read-only: they perform no Telegram API calls, do not advance the cursor, and do not write to `CURSOR_FILE`. A preview does not guarantee delivery; the live path remains the authority for what is actually sent.
 
 ### Health Reporting
 - `HEALTH_HOST` & `HEALTH_PORT`: Binds a local HTTP endpoint for health probes (e.g., Kubernetes liveness probes). Set port to 0 to disable.
