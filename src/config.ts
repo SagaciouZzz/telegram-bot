@@ -190,6 +190,40 @@ export interface TelegramRoute {
   channelPreviewMode: boolean;
 }
 
+/**
+ * Result of resolving the configured Telegram routes for delivery.
+ *
+ * `zero-active-routes` means every configured route is disabled, so no
+ * notification can be delivered. It is reported distinctly from `healthy`
+ * and must never be presented as a successful delivery.
+ */
+export type RouteDeliveryStatus =
+  | { status: "healthy"; activeRouteCount: number }
+  | {
+      status: "zero-active-routes";
+      activeRouteCount: 0;
+      message: string;
+    };
+
+/**
+ * Derives the delivery status from the configured routes. A route counts as
+ * active unless it is explicitly disabled. Delivery is never claimed here.
+ */
+export function resolveRouteDeliveryStatus(
+  routes: ReadonlyArray<TelegramRoute & { enabled?: boolean }>,
+): RouteDeliveryStatus {
+  const activeRouteCount = routes.filter((route) => route.enabled !== false).length;
+  if (activeRouteCount === 0) {
+    return {
+      status: "zero-active-routes",
+      activeRouteCount: 0,
+      message:
+        "No active Telegram routes: every configured route is disabled. Notifications will not be delivered until at least one route is enabled.",
+    };
+  }
+  return { status: "healthy", activeRouteCount };
+}
+
 export interface BotConfig extends StellarConfig {
   /** Locale for every user-facing string, from MIMIR_LOCALE. */
   locale: Locale;
