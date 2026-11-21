@@ -268,6 +268,8 @@ export type RouteDeliveryStatus =
 export function resolveRouteDeliveryStatus(
   routes: ReadonlyArray<TelegramRoute & { enabled?: boolean }>,
 ): RouteDeliveryStatus {
+  // Topic identifiers are carried on each route (TelegramRoute.topicId) so
+  // operator diagnostics can distinguish forum topics within one chat.
   const activeRouteCount = routes.filter((route) => route.enabled !== false).length;
   if (activeRouteCount === 0) {
     return {

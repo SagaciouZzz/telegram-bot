@@ -89,7 +89,7 @@ function line(entry: JournalEntry): string {
   return JSON.stringify(entry);
 }
 
-function isDoneError(err: unknown): boolean {
+function isMissingFileError(err: unknown): boolean {
   return (err as NodeJS.ErrnoException)?.code === "ENOENT";
 }
 
@@ -121,7 +121,7 @@ export function createSendJournal(options: SendJournalOptions): SendJournal {
     try {
       raw = await readFile(filePath, "utf8");
     } catch (err) {
-      if (isDoneError(err)) return [];
+      if (isMissingFileError(err)) return [];
       throw err;
     }
     const out: JournalEntry[] = [];
@@ -211,7 +211,7 @@ export function createSendJournal(options: SendJournalOptions): SendJournal {
     try {
       raw = await readFile(filePath, "utf8");
     } catch (err) {
-      if (isDoneError(err)) return { entries: 0, bytes: 0 };
+      if (isMissingFileError(err)) return { entries: 0, bytes: 0 };
       throw err;
     }
     let entries = 0;

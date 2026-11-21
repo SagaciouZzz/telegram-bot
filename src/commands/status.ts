@@ -6,14 +6,12 @@
 
 import { performance } from "node:perf_hooks";
 
-import {
-  escapeMd,
-  formatLastEvent,
-} from "../notifications/format.js";
+import { escapeMd, formatLastEvent } from "../notifications/format.js";
 import { networkLabel, type BotConfig } from "../config.js";
 import { chainClockLabel } from "../health.js";
 import { formatFeatureFlags } from "../notifications/featureFlags.js";
 import type { PollerStatus } from "../poller.js";
+import { redactDestination } from "../redact.js";
 import { defineCommand } from "./registry.js";
 import { TELEGRAM_OPTIONS } from "./runtime.js";
 
@@ -34,13 +32,11 @@ function cursorPreview(cursor: string | null): string {
 /**
  * Describes a Telegram destination for operator diagnostics without exposing
  * the chat identifier. Separate topics within the same chat are distinguished
- * by a short, non-reversible tag; the chat itself is only ever shown as a
- * redacted placeholder.
+ * by a short, non-reversible fingerprint; the chat and topic ids are never
+ * printed in full.
  */
 export function routeLabel(route: { chatId: string | number; topicId?: number | null }): string {
-  const chat = `chat ${String(route.chatId).length > 0 ? "[redacted]" : "[redacted]"}`;
-  if (route.topicId === undefined || route.topicId === null) return chat;
-  return `${chat} topic #${route.topicId}`;
+  return redactDestination(route.chatId, route.topicId ?? null);
 }
 
 export function statusMessage(
