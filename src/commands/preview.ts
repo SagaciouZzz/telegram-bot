@@ -21,8 +21,11 @@ export const previewCommand = defineCommand({
     const [first, ...rest] = argument.split(/\s+/).filter(Boolean);
     if (first === "routes" || first === "routing") {
       const target = rest[0] || "market";
-      const report = previewRouting(deps.config, target);
-      await ctx.reply(report.lines.join("\n"), TELEGRAM_OPTIONS);
+      const report = previewRouting(deps.config.name ?? String(deps.config), target);
+      const lines = Array.isArray((report as { lines?: string[] }).lines)
+        ? (report as { lines: string[] }).lines
+        : [JSON.stringify(report)];
+      await ctx.reply(lines.join("\n"), TELEGRAM_OPTIONS);
       return;
     }
     const target = argument || "market";

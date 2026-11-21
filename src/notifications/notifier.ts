@@ -277,7 +277,7 @@ export function createNotifier(
   const migrations = new Map<string, string>();
   const secrets = typeof config.botToken === "string" ? [config.botToken] : [];
 
-  function resolveChatId(chatId: string): string {
+  function resolveMigratedChatId(chatId: string): string {
     let current = chatId;
     const seen = new Set<string>();
     while (migrations.has(current) && !seen.has(current)) {
@@ -292,7 +292,7 @@ export function createNotifier(
     const to = toChatId.trim();
     if (!from || !to || from === to) return false;
     // Prevent cyclic migrations (e.g. to -> ... -> from).
-    if (resolveChatId(to) === from) return false;
+    if (resolveMigratedChatId(to) === from) return false;
     if (migrations.get(from) === to) return false;
 
     migrations.set(from, to);
@@ -414,5 +414,5 @@ export function createNotifier(
     }
   };
 
-  return Object.assign(notify, { migrateRoute, resolveChatId });
+  return Object.assign(notify, { migrateRoute, resolveChatId: resolveMigratedChatId });
 }
