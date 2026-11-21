@@ -180,9 +180,7 @@ export function redactText(input: string, options: RedactOptions = {}): string {
   }
 
   for (const rule of ERROR_REDACTION_RULES) {
-    out = typeof rule.replacement === "string"
-      ? out.replace(rule.pattern, rule.replacement)
-      : out.replace(rule.pattern, rule.replacement);
+    out = out.replace(rule.pattern, rule.replacement as never);
   }
 
   return clamp(out, options.maxLen);
@@ -204,6 +202,19 @@ export function redactDestination(chatId: string | number, topicId?: string | nu
   const chat = `chat:${fingerprint(String(chatId))}`;
   if (topicId === undefined || topicId === null || String(topicId) === "") return chat;
   return `${chat}/topic:${fingerprint(String(topicId))}`;
+}
+
+/**
+ * Format a Telegram destination (chat id plus optional topic/thread id) for an
+ * operator route diagnostic line. Identifiers are fingerprinted, never printed.
+ */
+export function describeRoute(chatId: string | number, topicId?: string | number | null): string {
+  return redactDestination(chatId, topicId);
+}
+
+/** Reference to a route for diagnostics, identifiers fingerprinted. */
+export function routeLabel(chatId: string | number, topicId?: string | number | null): string {
+  return describeRoute(chatId, topicId);
 }
 
 /** Stable 8-hex-char FNV-1a fingerprint of a string. Not reversible to the input. */
